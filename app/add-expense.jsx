@@ -1,7 +1,20 @@
+import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import Sidebar from '../components/Sidebar';
 
+const CATEGORIES = [
+  { label: 'General', color: '#999' },
+];
+
 export default function AddExpensePage() {
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [selected, setSelected] = useState('General');
+  const [search, setSearch] = useState('');
+
+  const filtered = CATEGORIES.filter(c =>
+    c.label.toLowerCase().includes(search.toLowerCase())
+  );
+
   return (
     <View style={styles.container}>
       <Sidebar />
@@ -11,10 +24,57 @@ export default function AddExpensePage() {
           <Text style={styles.title}>Add expense</Text>
 
           <Text style={styles.label}>Category</Text>
-          <View style={styles.dropdown}>
-            <Text style={styles.dropdownText}>General</Text>
-            <Text style={styles.dropdownArrow}>-</Text>
-          </View>
+
+          {/* Dropdown trigger */}
+          <TouchableOpacity
+            style={[styles.dropdownTrigger, dropdownOpen && styles.dropdownTriggerOpen]}
+            onPress={() => setDropdownOpen(o => !o)}
+            activeOpacity={0.8}
+          >
+            <View style={styles.dropdownTriggerLeft}>
+              <View style={[styles.dot, { backgroundColor: CATEGORIES.find(c => c.label === selected)?.color ?? '#999' }]} />
+              <Text style={styles.dropdownText}>{selected}</Text>
+            </View>
+            <Text style={styles.dropdownArrow}>{dropdownOpen ? '▲' : '▼'}</Text>
+          </TouchableOpacity>
+
+          {/* Dropdown panel */}
+          {dropdownOpen && (
+            <View style={styles.dropdownPanel}>
+              {/* Search */}
+              <View style={styles.searchRow}>
+                <Text style={styles.searchIcon}>🔍</Text>
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder="Search categories..."
+                  placeholderTextColor="#bbb"
+                  value={search}
+                  onChangeText={setSearch}
+                  autoFocus
+                />
+              </View>
+
+              {/* List */}
+              {filtered.map(cat => (
+                <TouchableOpacity
+                  key={cat.label}
+                  style={styles.dropdownItem}
+                  onPress={() => { setSelected(cat.label); setDropdownOpen(false); setSearch(''); }}
+                >
+                  <View style={styles.dropdownItemLeft}>
+                    <View style={[styles.dot, { backgroundColor: cat.color }]} />
+                    <Text style={styles.dropdownItemText}>{cat.label}</Text>
+                  </View>
+                  {selected === cat.label && <Text style={styles.checkmark}>✓</Text>}
+                </TouchableOpacity>
+              ))}
+
+              {/* Add category */}
+              <TouchableOpacity style={styles.addCategoryBtn}>
+                <Text style={styles.addCategoryText}>+ Add category</Text>
+              </TouchableOpacity>
+            </View>
+          )}
 
           <Text style={styles.label}>
             What is this expense for?{' '}
@@ -110,7 +170,7 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     color: '#bbb',
   },
-  dropdown: {
+  dropdownTrigger: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -120,15 +180,90 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingHorizontal: 14,
     backgroundColor: '#fafaf8',
-    marginBottom: 20,
+    marginBottom: 4,
+  },
+  dropdownTriggerOpen: {
+    borderColor: '#c5c0b8',
+  },
+  dropdownTriggerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   dropdownText: {
     fontSize: 14,
     color: '#1a1a1a',
   },
   dropdownArrow: {
-    fontSize: 16,
+    fontSize: 10,
     color: '#bbb',
+  },
+  dot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  dropdownPanel: {
+    borderWidth: 1,
+    borderColor: '#e8e5e0',
+    borderRadius: 10,
+    backgroundColor: '#fff',
+    marginBottom: 20,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+  },
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0ede8',
+    gap: 8,
+  },
+  searchIcon: {
+    fontSize: 13,
+    color: '#bbb',
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 13,
+    color: '#1a1a1a',
+    outlineStyle: 'none',
+    paddingVertical: 0,
+  },
+  dropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f5f3f0',
+  },
+  dropdownItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  dropdownItemText: {
+    fontSize: 14,
+    color: '#1a1a1a',
+  },
+  checkmark: {
+    fontSize: 14,
+    color: '#888',
+  },
+  addCategoryBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+  },
+  addCategoryText: {
+    fontSize: 13,
+    color: '#888',
   },
   textarea: {
     height: 90,
