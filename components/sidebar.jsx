@@ -1,7 +1,8 @@
-import { Link, usePathname } from 'expo-router';
+import { usePathname, useRouter } from 'expo-router';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function Sidebar() {
+  const router = useRouter();
   const pathname = usePathname();
 
   const navItems = [
@@ -20,17 +21,17 @@ export default function Sidebar() {
       </View>
 
       {navItems.map((item) => (
-        <Link key={item.href} href={item.href} asChild>
-          <TouchableOpacity
-            style={[
-              styles.navItem,
-              pathname === item.href && styles.navItemActive,
-            ]}
-          >
-            <Text style={styles.navIcon}>{item.icon}</Text>
-            <Text style={styles.navLabel}>{item.label}</Text>
-          </TouchableOpacity>
-        </Link>
+        <TouchableOpacity
+          key={item.href}
+          style={[
+            styles.navItem,
+            pathname === item.href && styles.navItemActive,
+          ]}
+          onPress={() => router.push(item.href)}
+        >
+          <Text style={styles.navIcon}>{item.icon}</Text>
+          <Text style={styles.navLabel}>{item.label}</Text>
+        </TouchableOpacity>
       ))}
     </View>
   );
