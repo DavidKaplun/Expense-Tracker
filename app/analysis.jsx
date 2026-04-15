@@ -47,7 +47,11 @@ export default function AnalysisPage() {
                 key={item.key}
                 style={styles.summaryCard}
                 activeOpacity={0.75}
-                onPress={() => item.key === 'monthly' && router.push('/monthly-summary')}
+                onPress={() => {
+                  if (item.key === 'monthly') router.push('/monthly-summary');
+                  if (item.key === 'yearly') router.push('/yearly-summary');
+                  if (item.key === 'categories') router.push('/categories');
+                }}
               >
                 <View style={[styles.summaryIcon, { backgroundColor: item.iconBg }]}>
                   <Text style={[styles.summaryIconText, { color: item.iconColor }]}>

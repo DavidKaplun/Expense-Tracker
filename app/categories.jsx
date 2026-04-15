@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useRouter } from 'expo-router';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Sidebar from '../components/Sidebar';
 
@@ -9,6 +10,7 @@ const CATEGORIES = [
 const FILTERS = ['This month', 'This year', 'All time'];
 
 export default function CategoriesPage() {
+  const router = useRouter();
   const [filter, setFilter] = useState('This month');
   const [filterOpen, setFilterOpen] = useState(false);
 
@@ -66,6 +68,7 @@ export default function CategoriesPage() {
                 key={cat.name}
                 style={[styles.row, index < CATEGORIES.length - 1 && styles.rowBorder]}
                 activeOpacity={0.7}
+                onPress={() => router.push(`/category-detail?name=${cat.name}`)}
               >
                 {/* Dot */}
                 <View style={[styles.dot, { backgroundColor: cat.color }]} />
