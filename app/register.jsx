@@ -1,7 +1,29 @@
-import { Link } from 'expo-router';
+import { Link, useRouter } from 'expo-router';
+import { useState } from 'react';
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { registerUser } from '../utils/api';
 
 export default function RegisterPage() {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [error, setError] = useState('');
+  const router = useRouter();
+
+  const handleRegister = async () => {
+    setError('');
+    if (password !== confirm) {
+      setError('Passwords do not match');
+      return;
+    }
+    const data = await registerUser(username, password);
+    if (data.userId) {
+      router.replace('/');
+    } else {
+      setError(data.error || 'Registration failed');
+    }
+  };
+
   return (
     <View style={styles.background}>
       <View style={styles.card}>
@@ -18,6 +40,8 @@ export default function RegisterPage() {
           style={styles.input}
           placeholder="Choose a username"
           placeholderTextColor="#aaa"
+          value={username}
+          onChangeText={setUsername}
         />
 
         <Text style={styles.label}>Password</Text>
@@ -26,6 +50,8 @@ export default function RegisterPage() {
           placeholder="Create a password"
           placeholderTextColor="#aaa"
           secureTextEntry
+          value={password}
+          onChangeText={setPassword}
         />
 
         <Text style={styles.label}>Confirm password</Text>
@@ -34,9 +60,13 @@ export default function RegisterPage() {
           placeholder="Repeat your password"
           placeholderTextColor="#aaa"
           secureTextEntry
+          value={confirm}
+          onChangeText={setConfirm}
         />
 
-        <TouchableOpacity style={styles.button}>
+        {error ? <Text style={styles.error}>{error}</Text> : null}
+
+        <TouchableOpacity style={styles.button} onPress={handleRegister}>
           <Text style={styles.buttonText}>Create account</Text>
         </TouchableOpacity>
 
@@ -150,5 +180,10 @@ const styles = StyleSheet.create({
   termsLink: {
     color: '#888',
     textDecorationLine: 'underline',
+  },
+  error: {
+    color: 'red',
+    fontSize: 13,
+    marginBottom: 10,
   },
 });

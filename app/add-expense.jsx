@@ -1,18 +1,71 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import Sidebar from '../components/Sidebar';
-
-const CATEGORIES = [
-  { label: 'General', color: '#999' },
-];
+import { useAuth } from '../context/AuthContext';
+import { addExpense, createCategory, getCategories } from '../utils/api';
 
 export default function AddExpensePage() {
+  const { token } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [selected, setSelected] = useState('General');
+  const [selectedCategory, setSelectedCategory] = useState(null);
   const [search, setSearch] = useState('');
+  const [categories, setCategories] = useState([]);
+  const [description, setDescription] = useState('');
+  const [amount, setAmount] = useState('');
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [showNewCategory, setShowNewCategory] = useState(false);
 
-  const filtered = CATEGORIES.filter(c =>
-    c.label.toLowerCase().includes(search.toLowerCase())
+  useEffect(() => {
+    loadCategories();
+  }, []);
+
+  const loadCategories = async () => {
+    const data = await getCategories(token);
+    if (Array.isArray(data)) setCategories(data);
+  };
+
+  const handleAddCategory = async () => {
+    if (!newCategoryName.trim()) return;
+    const data = await createCategory(token, newCategoryName.trim());
+    if (data.id) {
+      setCategories(prev => [...prev, data]);
+      setSelectedCategory(data);
+      setNewCategoryName('');
+      setShowNewCategory(false);
+      setDropdownOpen(false);
+    }
+  };
+
+  const handleSubmit = async () => {
+    setError('');
+    setSuccess('');
+
+    if (!selectedCategory) return setError('Please select a category');
+    if (!amount) return setError('Please enter an amount');
+
+    const today = new Date().toISOString().slice(0, 10);
+
+    const data = await addExpense(token, {
+      amount: parseFloat(amount),
+      description,
+      date: today,
+      category_id: selectedCategory.id,
+    });
+
+    if (data.id) {
+      setSuccess('Expense added!');
+      setAmount('');
+      setDescription('');
+      setSelectedCategory(null);
+    } else {
+      setError(data.error || 'Failed to add expense');
+    }
+  };
+
+  const filtered = categories.filter(c =>
+    c.name.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
@@ -25,23 +78,20 @@ export default function AddExpensePage() {
 
           <Text style={styles.label}>Category</Text>
 
-          {/* Dropdown trigger */}
           <TouchableOpacity
             style={[styles.dropdownTrigger, dropdownOpen && styles.dropdownTriggerOpen]}
             onPress={() => setDropdownOpen(o => !o)}
             activeOpacity={0.8}
           >
             <View style={styles.dropdownTriggerLeft}>
-              <View style={[styles.dot, { backgroundColor: CATEGORIES.find(c => c.label === selected)?.color ?? '#999' }]} />
-              <Text style={styles.dropdownText}>{selected}</Text>
+              <View style={[styles.dot, { backgroundColor: '#999' }]} />
+              <Text style={styles.dropdownText}>{selectedCategory ? selectedCategory.name : 'Select category'}</Text>
             </View>
             <Text style={styles.dropdownArrow}>{dropdownOpen ? '▲' : '▼'}</Text>
           </TouchableOpacity>
 
-          {/* Dropdown panel */}
           {dropdownOpen && (
             <View style={styles.dropdownPanel}>
-              {/* Search */}
               <View style={styles.searchRow}>
                 <Text style={styles.searchIcon}>🔍</Text>
                 <TextInput
@@ -54,25 +104,39 @@ export default function AddExpensePage() {
                 />
               </View>
 
-              {/* List */}
               {filtered.map(cat => (
                 <TouchableOpacity
-                  key={cat.label}
+                  key={cat.id}
                   style={styles.dropdownItem}
-                  onPress={() => { setSelected(cat.label); setDropdownOpen(false); setSearch(''); }}
+                  onPress={() => { setSelectedCategory(cat); setDropdownOpen(false); setSearch(''); }}
                 >
                   <View style={styles.dropdownItemLeft}>
-                    <View style={[styles.dot, { backgroundColor: cat.color }]} />
-                    <Text style={styles.dropdownItemText}>{cat.label}</Text>
+                    <View style={[styles.dot, { backgroundColor: '#999' }]} />
+                    <Text style={styles.dropdownItemText}>{cat.name}</Text>
                   </View>
-                  {selected === cat.label && <Text style={styles.checkmark}>✓</Text>}
+                  {selectedCategory?.id === cat.id && <Text style={styles.checkmark}>✓</Text>}
                 </TouchableOpacity>
               ))}
 
-              {/* Add category */}
-              <TouchableOpacity style={styles.addCategoryBtn}>
-                <Text style={styles.addCategoryText}>+ Add category</Text>
-              </TouchableOpacity>
+              {showNewCategory ? (
+                <View style={styles.newCategoryRow}>
+                  <TextInput
+                    style={styles.newCategoryInput}
+                    placeholder="Category name..."
+                    placeholderTextColor="#bbb"
+                    value={newCategoryName}
+                    onChangeText={setNewCategoryName}
+                    autoFocus
+                  />
+                  <TouchableOpacity onPress={handleAddCategory} style={styles.newCategoryConfirm}>
+                    <Text style={styles.newCategoryConfirmText}>Add</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <TouchableOpacity style={styles.addCategoryBtn} onPress={() => setShowNewCategory(true)}>
+                  <Text style={styles.addCategoryText}>+ Add category</Text>
+                </TouchableOpacity>
+              )}
             </View>
           )}
 
@@ -86,6 +150,8 @@ export default function AddExpensePage() {
             placeholderTextColor="#bbb"
             multiline
             maxLength={50}
+            value={description}
+            onChangeText={setDescription}
           />
 
           <Text style={styles.label}>How much?</Text>
@@ -96,6 +162,8 @@ export default function AddExpensePage() {
               placeholder="0.00"
               placeholderTextColor="#bbb"
               keyboardType="decimal-pad"
+              value={amount}
+              onChangeText={setAmount}
             />
           </View>
 
@@ -119,7 +187,10 @@ export default function AddExpensePage() {
             </TouchableOpacity>
           </View>
 
-          <TouchableOpacity style={styles.button}>
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+          {success ? <Text style={styles.successText}>{success}</Text> : null}
+
+          <TouchableOpacity style={styles.button} onPress={handleSubmit}>
             <Text style={styles.buttonText}>Add expense</Text>
           </TouchableOpacity>
         </View>
@@ -265,6 +336,35 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#888',
   },
+  newCategoryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    gap: 8,
+  },
+  newCategoryInput: {
+    flex: 1,
+    fontSize: 13,
+    color: '#1a1a1a',
+    borderWidth: 1,
+    borderColor: '#e8e5e0',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    outlineStyle: 'none',
+  },
+  newCategoryConfirm: {
+    backgroundColor: '#1a1a1a',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  newCategoryConfirmText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '600',
+  },
   textarea: {
     height: 90,
     borderWidth: 1,
@@ -344,5 +444,15 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 15,
     fontWeight: '600',
+  },
+  error: {
+    color: 'red',
+    fontSize: 13,
+    marginBottom: 10,
+  },
+  successText: {
+    color: 'green',
+    fontSize: 13,
+    marginBottom: 10,
   },
 });

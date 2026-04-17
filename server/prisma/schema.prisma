@@ -17,9 +17,11 @@ model User {
 model Category {
   id       Int       @id @default(autoincrement())
   user_id  Int
-  name     String    @unique
+  name     String
   user     User      @relation(fields: [user_id], references: [id])
   expenses Expense[]
+
+  @@unique([user_id, name])
 }
 
 model Expense {

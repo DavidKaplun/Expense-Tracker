@@ -1,7 +1,27 @@
-import { Link } from 'expo-router';
+import { Link, useRouter } from 'expo-router';
+import { useState } from 'react';
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useAuth } from '../context/AuthContext';
+import { loginUser } from '../utils/api';
 
 export default function LoginPage() {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const { login } = useAuth();
+  const router = useRouter();
+
+  const handleLogin = async () => {
+    setError('');
+    const data = await loginUser(username, password);
+    if (data.token) {
+      login(data.token, data.userId);
+      router.replace('/add-expense');
+    } else {
+      setError(data.error || 'Login failed');
+    }
+  };
+
   return (
     <View style={styles.background}>
       <View style={styles.card}>
@@ -18,6 +38,8 @@ export default function LoginPage() {
           style={styles.input}
           placeholder="Enter your username"
           placeholderTextColor="#aaa"
+          value={username}
+          onChangeText={setUsername}
         />
 
         <Text style={styles.label}>Password</Text>
@@ -26,9 +48,13 @@ export default function LoginPage() {
           placeholder="Enter your password"
           placeholderTextColor="#aaa"
           secureTextEntry
+          value={password}
+          onChangeText={setPassword}
         />
 
-        <TouchableOpacity style={styles.button}>
+        {error ? <Text style={styles.error}>{error}</Text> : null}
+
+        <TouchableOpacity style={styles.button} onPress={handleLogin}>
           <Text style={styles.buttonText}>Sign in</Text>
         </TouchableOpacity>
 
@@ -124,5 +150,10 @@ const styles = StyleSheet.create({
   registerLink: {
     color: '#1a1a1a',
     fontWeight: '700',
+  },
+  error: {
+    color: 'red',
+    fontSize: 13,
+    marginBottom: 10,
   },
 });

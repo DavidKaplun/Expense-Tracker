@@ -1,18 +1,29 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Sidebar from '../components/Sidebar';
-
-const CATEGORIES = [
-  { name: 'General', color: '#9E9E9E', expenses: 0, amount: 0, percent: 100 },
-];
+import { useAuth } from '../context/AuthContext';
+import { getCategories } from '../utils/api';
 
 const FILTERS = ['This month', 'This year', 'All time'];
+const FILTER_KEYS = { 'This month': 'month', 'This year': 'year', 'All time': 'all' };
+const COLORS = ['#6C8EBF', '#82B366', '#D6A84E', '#AE6BBD', '#E07070', '#5BBFBF', '#E0934E', '#9E9E9E'];
 
 export default function CategoriesPage() {
   const router = useRouter();
+  const { token } = useAuth();
   const [filter, setFilter] = useState('This month');
   const [filterOpen, setFilterOpen] = useState(false);
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!token) return;
+    setLoading(true);
+    getCategories(token, FILTER_KEYS[filter])
+      .then(data => setCategories(Array.isArray(data) ? data : []))
+      .finally(() => setLoading(false));
+  }, [token, filter]);
 
   return (
     <View style={styles.container}>
@@ -62,41 +73,42 @@ export default function CategoriesPage() {
           </View>
 
           {/* Category rows */}
-          <View style={styles.list}>
-            {CATEGORIES.map((cat, index) => (
-              <TouchableOpacity
-                key={cat.name}
-                style={[styles.row, index < CATEGORIES.length - 1 && styles.rowBorder]}
-                activeOpacity={0.7}
-                onPress={() => router.push(`/category-detail?name=${cat.name}`)}
-              >
-                {/* Dot */}
-                <View style={[styles.dot, { backgroundColor: cat.color }]} />
+          {loading ? (
+            <ActivityIndicator style={{ marginVertical: 32 }} color="#888" />
+          ) : (
+            <View style={styles.list}>
+              {categories.length === 0 ? (
+                <Text style={styles.emptyText}>No categories yet.</Text>
+              ) : categories.map((cat, index) => {
+                const color = COLORS[index % COLORS.length];
+                return (
+                  <TouchableOpacity
+                    key={cat.id}
+                    style={[styles.row, index < categories.length - 1 && styles.rowBorder]}
+                    activeOpacity={0.7}
+                    onPress={() => router.push(`/category-detail?name=${cat.name}`)}
+                  >
+                    <View style={[styles.dot, { backgroundColor: color }]} />
 
-                {/* Name + expense count */}
-                <View style={styles.nameCol}>
-                  <Text style={styles.catName}>{cat.name}</Text>
-                  <Text style={styles.catExpenses}>
-                    {cat.expenses} {cat.expenses === 1 ? 'expense' : 'expenses'}
-                  </Text>
-                </View>
+                    <View style={styles.nameCol}>
+                      <Text style={styles.catName}>{cat.name}</Text>
+                      <Text style={styles.catExpenses}>
+                        {cat.expenses} {cat.expenses === 1 ? 'expense' : 'expenses'}
+                      </Text>
+                    </View>
 
-                {/* Progress bar */}
-                <View style={styles.progressTrack}>
-                  <View style={[styles.progressFill, { width: `${cat.percent}%`, backgroundColor: cat.color }]} />
-                </View>
+                    <View style={styles.progressTrack}>
+                      <View style={[styles.progressFill, { width: `${cat.percent ?? 0}%`, backgroundColor: color }]} />
+                    </View>
 
-                {/* Percentage */}
-                <Text style={styles.percent}>{cat.percent.toFixed(1)}%</Text>
-
-                {/* Amount */}
-                <Text style={styles.amount}>₪{cat.amount.toLocaleString()}</Text>
-
-                {/* Chevron */}
-                <Text style={styles.chevron}>›</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+                    <Text style={styles.percent}>{(cat.percent ?? 0).toFixed(1)}%</Text>
+                    <Text style={styles.amount}>₪{(cat.amount ?? 0).toLocaleString()}</Text>
+                    <Text style={styles.chevron}>›</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
 
           {/* Add category button */}
           <TouchableOpacity style={styles.addCategoryBtn} activeOpacity={0.7}>
@@ -302,6 +314,13 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#ccc',
     marginLeft: 4,
+  },
+
+  emptyText: {
+    padding: 20,
+    textAlign: 'center',
+    color: '#aaa',
+    fontSize: 14,
   },
 
   // Add category
