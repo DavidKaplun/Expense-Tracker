@@ -1,6 +1,9 @@
+import { useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Sidebar from '../components/Sidebar';
+import { useAuth } from '../context/AuthContext';
+import { getExpenseStats } from '../utils/api';
 
 const summaryItems = [
   {
@@ -31,6 +34,16 @@ const summaryItems = [
 
 export default function AnalysisPage() {
   const router = useRouter();
+  const { token } = useAuth();
+  const [stats, setStats] = useState({ avgMonthly: 0, avgYearly: 0, monthCount: 0, yearCount: 0 });
+
+  useEffect(() => {
+    if (!token) return;
+    getExpenseStats(token).then(data => {
+      if (data && typeof data === 'object') setStats(data);
+    });
+  }, [token]);
+
   return (
     <View style={styles.container}>
       <Sidebar />
@@ -78,8 +91,8 @@ export default function AnalysisPage() {
                 </View>
                 <Text style={styles.avgLabel}>Avg monthly</Text>
               </View>
-              <Text style={styles.avgAmount}>₪4,210</Text>
-              <Text style={styles.avgMeta}>based on 4 months</Text>
+              <Text style={styles.avgAmount}>₪{Math.round(stats.avgMonthly).toLocaleString()}</Text>
+              <Text style={styles.avgMeta}>based on {stats.monthCount} month{stats.monthCount !== 1 ? 's' : ''}</Text>
             </View>
 
             {/* Avg yearly */}
@@ -90,8 +103,8 @@ export default function AnalysisPage() {
                 </View>
                 <Text style={styles.avgLabel}>Avg yearly</Text>
               </View>
-              <Text style={styles.avgAmount}>₪50,520</Text>
-              <Text style={styles.avgMeta}>based on 2 years</Text>
+              <Text style={styles.avgAmount}>₪{Math.round(stats.avgYearly).toLocaleString()}</Text>
+              <Text style={styles.avgMeta}>based on {stats.yearCount} year{stats.yearCount !== 1 ? 's' : ''}</Text>
             </View>
           </View>
         </View>

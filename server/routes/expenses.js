@@ -62,6 +62,29 @@ router.delete('/:id', async (req, res) => {
   res.json({ message: 'Expense deleted' });
 });
 
+// Averages stats
+router.get('/stats', async (req, res) => {
+  const expenses = await prisma.expense.findMany({
+    where: { user_id: req.userId },
+    select: { amount: true, date: true },
+  });
+
+  if (expenses.length === 0) {
+    return res.json({ avgMonthly: 0, avgYearly: 0, monthCount: 0, yearCount: 0 });
+  }
+
+  const months = new Set(expenses.map(e => e.date.toISOString().slice(0, 7)));
+  const years = new Set(expenses.map(e => e.date.getFullYear().toString()));
+  const total = expenses.reduce((sum, e) => sum + e.amount, 0);
+
+  res.json({
+    avgMonthly: total / months.size,
+    avgYearly: total / years.size,
+    monthCount: months.size,
+    yearCount: years.size,
+  });
+});
+
 // Monthly summary
 router.get('/monthly', async (req, res) => {
   const { month } = req.query; // expects "YYYY-MM"

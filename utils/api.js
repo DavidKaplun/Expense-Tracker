@@ -66,6 +66,13 @@ export async function deleteExpense(token, id) {
   return res.json();
 }
 
+export async function getExpenseStats(token) {
+  const res = await fetch(`${BASE_URL}/expenses/stats`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return res.json();
+}
+
 export async function getMonthlySummary(token, month) {
   const res = await fetch(`${BASE_URL}/expenses/monthly?month=${month}`, {
     headers: { Authorization: `Bearer ${token}` },
