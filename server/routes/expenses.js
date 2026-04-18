@@ -90,21 +90,28 @@ router.get('/monthly', async (req, res) => {
 
 // Yearly summary
 router.get('/yearly', async (req, res) => {
-  const expenses = await prisma.expense.findMany({
-    where: { user_id: req.userId },
-    include: { category: true },
-    orderBy: { date: 'asc' }
-  });
+  const { year } = req.query; // expects "YYYY"
 
-  const summary = {};
-  for (const expense of expenses) {
-    const year = expense.date.getFullYear().toString();
-    if (!summary[year]) summary[year] = { total: 0, expenses: [] };
-    summary[year].total += expense.amount;
-    summary[year].expenses.push(expense);
+  let dateFilter = {};
+  if (year && /^\d{4}$/.test(year)) {
+    const y = parseInt(year);
+    dateFilter = {
+      gte: new Date(y, 0, 1),
+      lt: new Date(y + 1, 0, 1),
+    };
   }
 
-  res.json(summary);
+  const expenses = await prisma.expense.findMany({
+    where: {
+      user_id: req.userId,
+      ...(Object.keys(dateFilter).length > 0 ? { date: dateFilter } : {}),
+    },
+    include: { category: true },
+    orderBy: { date: 'asc' },
+  });
+
+  const total = expenses.reduce((sum, e) => sum + e.amount, 0);
+  res.json({ total, expenses });
 });
 
 module.exports = router;

@@ -73,8 +73,8 @@ export async function getMonthlySummary(token, month) {
   return res.json();
 }
 
-export async function getYearlySummary(token) {
-  const res = await fetch(`${BASE_URL}/expenses/yearly`, {
+export async function getYearlySummary(token, year) {
+  const res = await fetch(`${BASE_URL}/expenses/yearly?year=${year}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   return res.json();
