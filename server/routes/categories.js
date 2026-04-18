@@ -60,7 +60,6 @@ router.get('/', async (req, res) => {
 // Get expenses for a specific category by name
 router.get('/:name/expenses', async (req, res) => {
   try {
-    console.log('Looking for category:', req.params.name, 'userId:', req.userId);
     const category = await prisma.category.findFirst({
       where: { name: { equals: req.params.name, mode: 'insensitive' }, user_id: req.userId },
     });

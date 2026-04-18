@@ -13,8 +13,7 @@ export default function CategoryDetailPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log('token:', token, 'name:', name);
-    if (!token || !name) return;
+if (!token || !name) return;
     getCategoryExpenses(token, name)
       .then(data => setExpenses(Array.isArray(data) ? data : []))
       .finally(() => setLoading(false));

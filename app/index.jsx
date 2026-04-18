@@ -53,7 +53,6 @@ export default function LoginPage() {
         />
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
-
         <TouchableOpacity style={styles.button} onPress={handleLogin}>
           <Text style={styles.buttonText}>Sign in</Text>
         </TouchableOpacity>
