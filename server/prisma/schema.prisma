@@ -7,11 +7,12 @@ datasource db {
 }
 
 model User {
-  id            Int        @id @default(autoincrement())
-  username      String     @unique
-  password_hash String
-  categories    Category[]
-  expenses      Expense[]
+  id             Int             @id @default(autoincrement())
+  username       String          @unique
+  password_hash  String
+  categories     Category[]
+  expenses       Expense[]
+  invoiceUsages  InvoiceUsage[]
 }
 
 model Category {
@@ -22,6 +23,17 @@ model Category {
   expenses Expense[]
 
   @@unique([user_id, name])
+}
+
+model InvoiceUsage {
+  id      Int @id @default(autoincrement())
+  user_id Int
+  year    Int
+  month   Int
+  count   Int @default(0)
+  user    User @relation(fields: [user_id], references: [id])
+
+  @@unique([user_id, year, month])
 }
 
 model Expense {

@@ -10,6 +10,7 @@ app.use(express.json());
 const authRoutes = require('./routes/auth');
 const categoryRoutes = require('./routes/categories');
 const expenseRoutes = require('./routes/expenses');
+const invoiceRoutes = require('./routes/invoice');
 
 app.get('/', (req, res) => {
   res.json({ message: 'Expense Tracker API is running' });
@@ -18,6 +19,7 @@ app.get('/', (req, res) => {
 app.use('/auth', authRoutes);
 app.use('/categories', categoryRoutes);
 app.use('/expenses', expenseRoutes);
+app.use('/invoice', invoiceRoutes);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

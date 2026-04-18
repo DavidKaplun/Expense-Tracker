@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import Sidebar from '../components/Sidebar';
 import { useAuth } from '../context/AuthContext';
-import { addExpense, createCategory, getCategories } from '../utils/api';
+import { addExpense, createCategory, getCategories, extractInvoice } from '../utils/api';
 
 export default function AddExpensePage() {
   const { token } = useAuth();
@@ -16,6 +16,8 @@ export default function AddExpensePage() {
   const [success, setSuccess] = useState('');
   const [newCategoryName, setNewCategoryName] = useState('');
   const [showNewCategory, setShowNewCategory] = useState(false);
+  const [extracting, setExtracting] = useState(false);
+  const [scansInfo, setScansInfo] = useState(null);
 
   useEffect(() => {
     loadCategories();
@@ -62,6 +64,34 @@ export default function AddExpensePage() {
     } else {
       setError(data.error || 'Failed to add expense');
     }
+  };
+
+  const handleInvoiceUpload = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/jpeg,image/png,image/webp,application/pdf';
+    input.onchange = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      setExtracting(true);
+      setError('');
+      try {
+        const data = await extractInvoice(token, file);
+        if (data.error) { setError(data.error); return; }
+        if (data.description) setDescription(data.description);
+        if (data.amount) setAmount(String(data.amount));
+        if (data.category) {
+          const match = categories.find(c => c.name.toLowerCase() === data.category.toLowerCase());
+          if (match) setSelectedCategory(match);
+        }
+        if (data.scansUsed != null) setScansInfo(`${data.scansUsed}/${data.scansLimit} scans used this month`);
+      } catch {
+        setError('Failed to read invoice');
+      } finally {
+        setExtracting(false);
+      }
+    };
+    input.click();
   };
 
   const filtered = categories.filter(c =>
@@ -172,21 +202,17 @@ export default function AddExpensePage() {
             <Text style={styles.labelMuted}>(optional)</Text>
           </Text>
           <View style={styles.invoiceRow}>
-            <TouchableOpacity style={styles.invoiceBtn}>
-              <Text style={styles.invoiceBtnText}>↑ Upload</Text>
-              <View style={styles.autofillBadge}>
-                <Text style={styles.autofillText}>Auto-fill</Text>
-              </View>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.invoiceBtn}>
-              <Text style={styles.invoiceBtnText}>⊙ Camera</Text>
-              <View style={styles.autofillBadge}>
-                <Text style={styles.autofillText}>Auto-fill</Text>
-              </View>
+            <TouchableOpacity style={styles.invoiceBtn} onPress={handleInvoiceUpload} disabled={extracting}>
+              <Text style={styles.invoiceBtnText}>{extracting ? '⏳ Reading...' : '↑ Upload'}</Text>
+              {!extracting && (
+                <View style={styles.autofillBadge}>
+                  <Text style={styles.autofillText}>Auto-fill</Text>
+                </View>
+              )}
             </TouchableOpacity>
           </View>
 
+          {scansInfo ? <Text style={styles.scansInfo}>{scansInfo}</Text> : null}
           {error ? <Text style={styles.error}>{error}</Text> : null}
           {success ? <Text style={styles.successText}>{success}</Text> : null}
 
@@ -444,6 +470,11 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 15,
     fontWeight: '600',
+  },
+  scansInfo: {
+    fontSize: 12,
+    color: '#888',
+    marginBottom: 8,
   },
   error: {
     color: 'red',

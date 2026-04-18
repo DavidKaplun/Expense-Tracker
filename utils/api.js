@@ -66,6 +66,17 @@ export async function deleteExpense(token, id) {
   return res.json();
 }
 
+export async function extractInvoice(token, file) {
+  const form = new FormData();
+  form.append('file', file);
+  const res = await fetch(`${BASE_URL}/invoice/extract`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: form,
+  });
+  return res.json();
+}
+
 export async function getExpenseStats(token) {
   const res = await fetch(`${BASE_URL}/expenses/stats`, {
     headers: { Authorization: `Bearer ${token}` },
