@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import Sidebar from '../components/Sidebar';
 import { useAuth } from '../context/AuthContext';
 import { getMonthlySummary } from '../utils/api';
@@ -27,6 +28,7 @@ function formatMonthTitle(key) {
 }
 
 export default function MonthlySummaryPage() {
+  const router = useRouter();
   const { token } = useAuth();
   const [tab, setTab] = useState('Individual');
   const [monthExpenses, setMonthExpenses] = useState([]);
@@ -90,6 +92,10 @@ export default function MonthlySummaryPage() {
 
       <View style={styles.main}>
         <View style={styles.topBar}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+            <Text style={styles.backArrow}>‹</Text>
+            <Text style={styles.backText}>back</Text>
+          </TouchableOpacity>
           <Text style={styles.topBarTitle}>monthly summary</Text>
         </View>
 
@@ -197,10 +203,29 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 14,
     paddingHorizontal: 20,
+    position: 'relative',
   },
   topBarTitle: {
     fontSize: 13,
     color: '#aaa',
+  },
+  backBtn: {
+    position: 'absolute',
+    left: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  backArrow: {
+    fontSize: 22,
+    color: '#1a1a1a',
+    lineHeight: 26,
+  },
+  backText: {
+    fontSize: 14,
+    color: '#1a1a1a',
+    fontWeight: '500',
+    paddingTop: 3,
   },
   scrollContent: {
     padding: 24,

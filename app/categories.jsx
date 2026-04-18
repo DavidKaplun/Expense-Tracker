@@ -29,7 +29,15 @@ export default function CategoriesPage() {
     <View style={styles.container}>
       <Sidebar />
 
-      <ScrollView style={styles.main} contentContainerStyle={styles.mainContent}>
+      <View style={styles.main}>
+        <View style={styles.topBar}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+            <Text style={styles.backArrow}>‹</Text>
+            <Text style={styles.backText}>back</Text>
+          </TouchableOpacity>
+        </View>
+
+        <ScrollView contentContainerStyle={styles.mainContent}>
         <View style={styles.card}>
 
           {/* Header row */}
@@ -116,7 +124,8 @@ export default function CategoriesPage() {
           </TouchableOpacity>
 
         </View>
-      </ScrollView>
+        </ScrollView>
+      </View>
     </View>
   );
 }
@@ -129,9 +138,32 @@ const styles = StyleSheet.create({
   },
   main: {
     flex: 1,
+    flexDirection: 'column',
+  },
+  topBar: {
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+  },
+  backBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    alignSelf: 'flex-start',
+  },
+  backArrow: {
+    fontSize: 22,
+    color: '#1a1a1a',
+    lineHeight: 26,
+  },
+  backText: {
+    fontSize: 14,
+    color: '#1a1a1a',
+    fontWeight: '500',
+    paddingTop: 3,
   },
   mainContent: {
     padding: 28,
+    paddingTop: 8,
     alignItems: 'center',
   },
   card: {
