@@ -34,8 +34,12 @@ export async function createCategory(token, name) {
   return res.json();
 }
 
-export async function getCategoryExpenses(token, categoryName) {
-  const res = await fetch(`${BASE_URL}/categories/${encodeURIComponent(categoryName)}/expenses`, {
+export async function getCategoryExpenses(token, categoryName, { month, year } = {}) {
+  const params = new URLSearchParams();
+  if (month) params.set('month', month);
+  if (year) params.set('year', year);
+  const query = params.toString() ? `?${params}` : '';
+  const res = await fetch(`${BASE_URL}/categories/${encodeURIComponent(categoryName)}/expenses${query}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok) return [];

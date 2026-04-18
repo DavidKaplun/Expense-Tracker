@@ -66,8 +66,22 @@ router.get('/:name/expenses', async (req, res) => {
 
     if (!category) return res.status(404).json({ error: 'Category not found' });
 
+    const { month, year } = req.query;
+    let dateFilter = {};
+    if (month && /^\d{4}-\d{2}$/.test(month)) {
+      const [y, m] = month.split('-').map(Number);
+      dateFilter = { gte: new Date(y, m - 1, 1), lt: new Date(y, m, 1) };
+    } else if (year && /^\d{4}$/.test(year)) {
+      const y = parseInt(year);
+      dateFilter = { gte: new Date(y, 0, 1), lt: new Date(y + 1, 0, 1) };
+    }
+
     const expenses = await prisma.expense.findMany({
-      where: { category_id: category.id, user_id: req.userId },
+      where: {
+        category_id: category.id,
+        user_id: req.userId,
+        ...(Object.keys(dateFilter).length > 0 ? { date: dateFilter } : {}),
+      },
       orderBy: { date: 'desc' },
     });
 

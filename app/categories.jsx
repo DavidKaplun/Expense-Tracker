@@ -3,7 +3,8 @@ import { useRouter } from 'expo-router';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Sidebar from '../components/Sidebar';
 import { useAuth } from '../context/AuthContext';
-import { getCategories } from '../utils/api';
+import { TextInput } from 'react-native';
+import { getCategories, createCategory } from '../utils/api';
 
 const FILTERS = ['This month', 'This year', 'All time'];
 const FILTER_KEYS = { 'This month': 'month', 'This year': 'year', 'All time': 'all' };
@@ -16,6 +17,24 @@ export default function CategoriesPage() {
   const [filterOpen, setFilterOpen] = useState(false);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showNewCategory, setShowNewCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [adding, setAdding] = useState(false);
+
+  const handleAddCategory = async () => {
+    if (!newCategoryName.trim() || adding) return;
+    setAdding(true);
+    const data = await createCategory(token, newCategoryName.trim());
+    if (data.id) {
+      setNewCategoryName('');
+      setShowNewCategory(false);
+      setLoading(true);
+      getCategories(token, FILTER_KEYS[filter])
+        .then(d => setCategories(Array.isArray(d) ? d : []))
+        .finally(() => setLoading(false));
+    }
+    setAdding(false);
+  };
 
   useEffect(() => {
     if (!token) return;
@@ -73,7 +92,7 @@ export default function CategoriesPage() {
               )}
 
               {/* New category button */}
-              <TouchableOpacity style={styles.newCategoryBtn} activeOpacity={0.8}>
+              <TouchableOpacity style={styles.newCategoryBtn} activeOpacity={0.8} onPress={() => setShowNewCategory(true)}>
                 <Text style={styles.newCategoryPlus}>+</Text>
                 <Text style={styles.newCategoryText}>New{'\n'}category</Text>
               </TouchableOpacity>
@@ -118,10 +137,30 @@ export default function CategoriesPage() {
             </View>
           )}
 
-          {/* Add category button */}
-          <TouchableOpacity style={styles.addCategoryBtn} activeOpacity={0.7}>
-            <Text style={styles.addCategoryText}>+ Add category</Text>
-          </TouchableOpacity>
+          {/* Add category */}
+          {showNewCategory ? (
+            <View style={styles.newCategoryRow}>
+              <TextInput
+                style={styles.newCategoryInput}
+                placeholder="Category name..."
+                placeholderTextColor="#bbb"
+                value={newCategoryName}
+                onChangeText={setNewCategoryName}
+                autoFocus
+                onSubmitEditing={handleAddCategory}
+              />
+              <TouchableOpacity onPress={handleAddCategory} style={styles.newCategoryConfirm} disabled={adding}>
+                <Text style={styles.newCategoryConfirmText}>{adding ? '...' : 'Add'}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => { setShowNewCategory(false); setNewCategoryName(''); }} style={styles.newCategoryCancel}>
+                <Text style={styles.newCategoryCancelText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <TouchableOpacity style={styles.addCategoryBtn} activeOpacity={0.7} onPress={() => setShowNewCategory(true)}>
+              <Text style={styles.addCategoryText}>+ Add category</Text>
+            </TouchableOpacity>
+          )}
 
         </View>
         </ScrollView>
@@ -356,6 +395,42 @@ const styles = StyleSheet.create({
   },
 
   // Add category
+  newCategoryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 12,
+  },
+  newCategoryInput: {
+    flex: 1,
+    fontSize: 14,
+    color: '#1a1a1a',
+    borderWidth: 1,
+    borderColor: '#e0ddd8',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    outlineStyle: 'none',
+  },
+  newCategoryConfirm: {
+    backgroundColor: '#1a1a1a',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  newCategoryConfirmText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  newCategoryCancel: {
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+  },
+  newCategoryCancelText: {
+    color: '#aaa',
+    fontSize: 13,
+  },
   addCategoryBtn: {
     borderWidth: 1.5,
     borderColor: '#e0ddd8',

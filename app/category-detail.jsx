@@ -7,17 +7,17 @@ import { getCategoryExpenses } from '../utils/api';
 
 export default function CategoryDetailPage() {
   const router = useRouter();
-  const { name } = useLocalSearchParams();
+  const { name, month, year } = useLocalSearchParams();
   const { token } = useAuth();
   const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
 if (!token || !name) return;
-    getCategoryExpenses(token, name)
+    getCategoryExpenses(token, name, { month, year })
       .then(data => setExpenses(Array.isArray(data) ? data : []))
       .finally(() => setLoading(false));
-  }, [token, name]);
+  }, [token, name, month, year]);
 
   const total = expenses.reduce((s, e) => s + e.amount, 0);
   const color = '#6C8EBF';
@@ -26,14 +26,15 @@ if (!token || !name) return;
     <View style={styles.container}>
       <Sidebar />
 
-      <ScrollView style={styles.main} contentContainerStyle={styles.scrollContent}>
+      <View style={styles.mainWrapper}>
+        <View style={styles.topBar}>
+          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()} activeOpacity={0.7}>
+            <Text style={styles.backArrow}>‹</Text>
+            <Text style={styles.backText}>back</Text>
+          </TouchableOpacity>
+        </View>
 
-        {/* Back link */}
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()} activeOpacity={0.7}>
-          <Text style={styles.backArrow}>‹</Text>
-          <Text style={styles.backText}>Back to categories</Text>
-        </TouchableOpacity>
-
+        <ScrollView style={styles.main} contentContainerStyle={styles.scrollContent}>
         <View style={styles.panel}>
 
           {/* Category header card */}
@@ -43,6 +44,11 @@ if (!token || !name) return;
             </View>
             <View>
               <Text style={styles.catName}>{name}</Text>
+              {(month || year) && (
+                <Text style={styles.catDate}>
+                  {month ? new Date(month + '-01').toLocaleString('default', { month: 'long', year: 'numeric' }) : year}
+                </Text>
+              )}
             </View>
           </View>
 
@@ -85,7 +91,8 @@ if (!token || !name) return;
           )}
 
         </View>
-      </ScrollView>
+        </ScrollView>
+      </View>
     </View>
   );
 }
@@ -95,6 +102,14 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     backgroundColor: '#f0ede8',
+  },
+  mainWrapper: {
+    flex: 1,
+    flexDirection: 'column',
+  },
+  topBar: {
+    paddingVertical: 14,
+    paddingHorizontal: 20,
   },
   main: {
     flex: 1,
@@ -110,17 +125,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
     alignSelf: 'flex-start',
-    marginBottom: 20,
-    paddingVertical: 4,
   },
   backArrow: {
-    fontSize: 20,
-    color: '#888',
-    lineHeight: 20,
+    fontSize: 22,
+    color: '#1a1a1a',
+    lineHeight: 26,
   },
   backText: {
     fontSize: 14,
-    color: '#888',
+    color: '#1a1a1a',
+    fontWeight: '500',
+    paddingTop: 3,
   },
 
   panel: {

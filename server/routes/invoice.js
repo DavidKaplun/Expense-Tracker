@@ -11,7 +11,7 @@ router.use(authMiddleware);
 
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+  limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     const allowed = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
     cb(null, allowed.includes(file.mimetype));
@@ -23,48 +23,35 @@ const client = new Anthropic.default({ apiKey: process.env.ANTHROPIC_API_KEY });
 router.post('/extract', upload.single('file'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
 
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth() + 1;
-
-  const usage = await prisma.invoiceUsage.upsert({
-    where: { user_id_year_month: { user_id: req.userId, year, month } },
-    update: {},
-    create: { user_id: req.userId, year, month, count: 0 },
-  });
-
-  if (usage.count >= MONTHLY_LIMIT) {
-    return res.status(429).json({ error: `Monthly limit of ${MONTHLY_LIMIT} invoice scans reached. Resets next month.` });
-  }
-
-  const { mimetype, buffer } = req.file;
-  const base64 = buffer.toString('base64');
-
-  const isPdf = mimetype === 'application/pdf';
-
-  const content = isPdf
-    ? [
-        {
-          type: 'document',
-          source: { type: 'base64', media_type: 'application/pdf', data: base64 },
-        },
-        {
-          type: 'text',
-          text: 'This is a receipt or invoice. Extract the following fields and return ONLY valid JSON with no explanation: { "description": "short description of what was purchased (max 50 chars)", "amount": number, "date": "YYYY-MM-DD", "category": "one of: Food, Housing, Transport, Shopping, Hobbies, Subscriptions, Health, Education, or Other" }. If a field cannot be determined, use null.',
-        },
-      ]
-    : [
-        {
-          type: 'image',
-          source: { type: 'base64', media_type: mimetype, data: base64 },
-        },
-        {
-          type: 'text',
-          text: 'This is a receipt or invoice. Extract the following fields and return ONLY valid JSON with no explanation: { "description": "short description of what was purchased (max 50 chars)", "amount": number, "date": "YYYY-MM-DD", "category": "one of: Food, Housing, Transport, Shopping, Hobbies, Subscriptions, Health, Education, or Other" }. If a field cannot be determined, use null.',
-        },
-      ];
-
   try {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth() + 1;
+
+    const usage = await prisma.invoiceUsage.upsert({
+      where: { user_id_year_month: { user_id: req.userId, year, month } },
+      update: {},
+      create: { user_id: req.userId, year, month, count: 0 },
+    });
+
+    if (usage.count >= MONTHLY_LIMIT) {
+      return res.status(429).json({ error: `Monthly limit of ${MONTHLY_LIMIT} invoice scans reached. Resets next month.` });
+    }
+
+    const { mimetype, buffer } = req.file;
+    const base64 = buffer.toString('base64');
+    const isPdf = mimetype === 'application/pdf';
+
+    const content = isPdf
+      ? [
+          { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64 } },
+          { type: 'text', text: 'This is a receipt or invoice. Extract the following fields and return ONLY valid JSON with no explanation: { "description": "short description of what was purchased (max 50 chars)", "amount": number, "date": "YYYY-MM-DD", "category": "one of: Food, Housing, Transport, Shopping, Hobbies, Subscriptions, Health, Education, or Other" }. If a field cannot be determined, use null.' },
+        ]
+      : [
+          { type: 'image', source: { type: 'base64', media_type: mimetype, data: base64 } },
+          { type: 'text', text: 'This is a receipt or invoice. Extract the following fields and return ONLY valid JSON with no explanation: { "description": "short description of what was purchased (max 50 chars)", "amount": number, "date": "YYYY-MM-DD", "category": "one of: Food, Housing, Transport, Shopping, Hobbies, Subscriptions, Health, Education, or Other" }. If a field cannot be determined, use null.' },
+        ];
+
     const message = await client.messages.create({
       model: 'claude-opus-4-7',
       max_tokens: 256,

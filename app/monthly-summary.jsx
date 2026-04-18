@@ -153,9 +153,11 @@ export default function MonthlySummaryPage() {
               ) : (
                 <View style={styles.list}>
                   {data.map((item, index) => (
-                    <View
+                    <TouchableOpacity
                       key={item.id ?? item.name}
                       style={[styles.row, index < data.length - 1 && styles.rowBorder]}
+                      activeOpacity={tab === 'Categories' ? 0.7 : 1}
+                      onPress={() => tab === 'Categories' && router.push(`/category-detail?name=${item.name}&month=${currentKey}`)}
                     >
                       <View style={[styles.colorBar, { backgroundColor: item.color }]} />
 
@@ -174,7 +176,7 @@ export default function MonthlySummaryPage() {
 
                       <Text style={styles.percent}>{item.percent.toFixed(1)}%</Text>
                       <Text style={styles.amount}>₪{item.amount.toLocaleString()}</Text>
-                    </View>
+                    </TouchableOpacity>
                   ))}
                 </View>
               )}
