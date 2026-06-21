@@ -4,9 +4,17 @@ A full-stack web application for tracking and analyzing personal expenses, with 
 
 ## Screenshots
 
-| Add expense | Analysis | Monthly summary |
-|:---:|:---:|:---:|
-| ![Add expense](assets/images/add-expense.png) | ![Analysis](assets/images/analysis.png) | ![Monthly summary](assets/images/monthly-summary.png) |
+**Add expense** — log an expense, or upload an invoice image to auto-fill the details.
+
+![Add expense](assets/images/add-expense.png)
+
+**Analysis** — monthly and yearly summaries plus per-category breakdowns.
+
+![Analysis](assets/images/analysis.png)
+
+**Monthly summary** — spending for the month, by individual expense or by category.
+
+![Monthly summary](assets/images/monthly-summary.png)
 
 **Live demo:** _coming soon_
 
