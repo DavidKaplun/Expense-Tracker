@@ -1,48 +1,110 @@
-# Welcome to your Expo app 👋
+# Expense Tracker
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A full-stack web application for tracking and analyzing personal expenses, with automated expense entry from invoice images using a multimodal LLM.
 
-## Get started
+## Screenshots
 
-1. Install dependencies
+| Add expense | Analysis | Monthly summary |
+|:---:|:---:|:---:|
+| ![Add expense](assets/images/add-expense.png) | ![Analysis](assets/images/analysis.png) | ![Monthly summary](assets/images/monthly-summary.png) |
 
-   ```bash
-   npm install
-   ```
+**Live demo:** _coming soon_
 
-2. Start the app
+---
 
-   ```bash
-   npx expo start
-   ```
+## Overview
 
-In the output, you'll find options to open the app in a
+Expense Tracker lets users record expenses, organize them into per-user categories, and view spending analysis across months and categories. Beyond manual entry, users can upload a photo of an invoice and have the expense details extracted and auto-filled by the Claude API.
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+The project is a single React (Expo / React Native Web) codebase for the client and a separate Node.js/Express API for the backend, backed by PostgreSQL via Prisma.
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+## Features
 
-## Get a fresh project
+- **User accounts** — registration and login with hashed passwords (bcrypt) and JWT-based authentication.
+- **Expense management** — add, view, and categorize expenses, each with amount, description, date, and an optional invoice image.
+- **Per-user categories** — every user has their own isolated set of categories, with colors assigned automatically.
+- **Invoice auto-fill** — upload an invoice image and the Claude API extracts the relevant details to pre-fill the expense, with per-user monthly usage limits.
+- **Spending analysis** — monthly and yearly summaries, plus per-category breakdowns.
 
-When you're ready, run:
+## Tech stack
 
-```bash
-npm run reset-project
+**Frontend:** React, React Native Web (Expo), file-based routing
+**Backend:** Node.js, Express, REST API
+**Database:** PostgreSQL with Prisma ORM
+**Auth:** JWT, bcrypt
+**AI:** Claude API (invoice data extraction)
+**Infrastructure:** AWS (EC2, RDS, S3, CloudFront), Nginx, PM2
+
+## Project structure
+
+```
+.
+├── app/          # Expo Router screens (file-based routing)
+├── components/   # Reusable UI components
+├── context/      # React context providers
+├── hooks/        # Custom React hooks
+├── constants/    # Shared constants
+├── utils/        # Helper functions
+├── assets/       # Images and static assets
+└── server/       # Node.js / Express backend + Prisma schema
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## Getting started
 
-## Learn more
+### Prerequisites
 
-To learn more about developing your project with Expo, look at the following resources:
+- Node.js (LTS)
+- A local PostgreSQL instance
+- A Claude API key (for the invoice auto-fill feature)
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+### 1. Clone and install
 
-## Join the community
+```bash
+git clone https://github.com/DavidKaplun/Expense-Tracker.git
+cd Expense-Tracker
+npm install
+```
+
+### 2. Configure the backend
+
+```bash
+cd server
+npm install
+```
+
+Create a `.env` file inside `server/`:
+
+```env
+DATABASE_URL="postgresql://USER:PASSWORD@localhost:5432/expense_tracker"
+JWT_SECRET="your_jwt_secret"
+ANTHROPIC_API_KEY="your_claude_api_key"
+```
+
+Run the Prisma migrations to set up the database schema:
+
+```bash
+npx prisma migrate dev
+```
+
+Start the backend (from inside the `server/` directory):
+
+```bash
+node index.js
+```
+
+### 3. Run the frontend
+
+From the project root:
+
+```bash
+npm start
+```
+
+Press `w` to open the web version in your browser.
+
+## License
+
+This project is for portfolio purposes.
 
 Join our community of developers creating universal apps.
 
