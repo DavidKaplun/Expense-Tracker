@@ -105,7 +105,3 @@ Press `w` to open the web version in your browser.
 ## License
 
 This project is for portfolio purposes.
-
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
