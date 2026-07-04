@@ -19,7 +19,7 @@ A full-stack expense tracker with automated expense entry — upload a photo of 
 
 ## Architecture
 
-A single React Native Web (Expo) codebase serves both the web and mobile clients, talking to a separate Node.js/Express REST API. The API is backed by PostgreSQL through Prisma. Uploaded invoice images are sent to the Claude API for one-time data extraction and then discarded, with only a per-user upload count kept to enforce usage limits.
+A single React Native Web (Expo) codebase that serves web clients, talking to a separate Node.js/Express REST API. The API is backed by PostgreSQL through Prisma. Uploaded invoice images are sent to the Claude API for one-time data extraction and then discarded, with only a per-user upload count kept to enforce usage limits.
 
 ## Key decisions
 
