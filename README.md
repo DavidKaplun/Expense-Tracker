@@ -1,115 +1,34 @@
 # Expense Tracker
 
-A full-stack web application for tracking and analyzing personal expenses, with automated expense entry from invoice images using a multimodal LLM.
+A full-stack expense tracker with automated expense entry — upload a photo of an invoice and a multimodal LLM extracts the details and fills in the expense for you.
 
-## Screenshots
+## Demo
 
-**Add expense** — log an expense, or upload an invoice image to auto-fill the details.
+📹 **[Demo video — link to be added]**
 
-![Add expense](assets/images/add-expense.png)
+🔗 **Live:** https://kaplunexpensetracker.com/
 
-**Analysis** — monthly and yearly summaries plus per-category breakdowns.
+## Stack
 
-![Analysis](assets/images/analysis.png)
+- **Frontend:** React, React Native Web (Expo), file-based routing
+- **Backend:** Node.js, Express, REST API
+- **Database:** PostgreSQL with Prisma ORM
+- **Auth:** JWT, bcrypt
+- **AI:** Claude API (invoice data extraction)
+- **Infra:** AWS (EC2, RDS, S3, CloudFront), Nginx, PM2
 
-**Monthly summary** — spending for the month, by individual expense or by category.
+## Architecture
 
-![Monthly summary](assets/images/monthly-summary.png)
+A single React Native Web (Expo) codebase serves both the web and mobile clients, talking to a separate Node.js/Express REST API. The API is backed by PostgreSQL through Prisma. Uploaded invoice images are sent to the Claude API for one-time data extraction and then discarded, with only a per-user upload count kept to enforce usage limits.
 
-**Live demo:** _coming soon_
+## Key decisions
 
----
+- **Multimodal LLM for invoice entry** — instead of manual typing or brittle OCR, invoice images are sent to the Claude API, which reads the image and returns structured expense data. Per-user monthly usage limits keep API costs bounded.
+- **One codebase for web and mobile** — React Native Web (Expo) means the same client code renders on both platforms rather than maintaining two separate apps.
+- **Prisma ORM** — type-safe queries and version-controlled migrations instead of hand-written SQL, so schema changes are tracked and repeatable.
+- **JWT + bcrypt for auth** — stateless tokens so the server holds no session state; passwords hashed with bcrypt, never stored in plaintext. Categories and expenses are isolated per user.
 
-## Overview
+## Known limitations / next steps
 
-Expense Tracker lets users record expenses, organize them into per-user categories, and view spending analysis across months and categories. Beyond manual entry, users can upload a photo of an invoice and have the expense details extracted and auto-filled by the Claude API.
-
-The project is a single React (Expo / React Native Web) codebase for the client and a separate Node.js/Express API for the backend, backed by PostgreSQL via Prisma.
-
-## Features
-
-- **User accounts** — registration and login with hashed passwords (bcrypt) and JWT-based authentication.
-- **Expense management** — add, view, and categorize expenses, each with amount, description, date, and an optional invoice image.
-- **Per-user categories** — every user has their own isolated set of categories, with colors assigned automatically.
-- **Invoice auto-fill** — upload an invoice image and the Claude API extracts the relevant details to pre-fill the expense, with per-user monthly usage limits.
-- **Spending analysis** — monthly and yearly summaries, plus per-category breakdowns.
-
-## Tech stack
-
-**Frontend:** React, React Native Web (Expo), file-based routing
-**Backend:** Node.js, Express, REST API
-**Database:** PostgreSQL with Prisma ORM
-**Auth:** JWT, bcrypt
-**AI:** Claude API (invoice data extraction)
-**Infrastructure:** AWS (EC2, RDS, S3, CloudFront), Nginx, PM2
-
-## Project structure
-
-```
-.
-├── app/          # Expo Router screens (file-based routing)
-├── components/   # Reusable UI components
-├── context/      # React context providers
-├── hooks/        # Custom React hooks
-├── constants/    # Shared constants
-├── utils/        # Helper functions
-├── assets/       # Images and static assets
-└── server/       # Node.js / Express backend + Prisma schema
-```
-
-## Getting started
-
-### Prerequisites
-
-- Node.js (LTS)
-- A local PostgreSQL instance
-- A Claude API key (for the invoice auto-fill feature)
-
-### 1. Clone and install
-
-```bash
-git clone https://github.com/DavidKaplun/Expense-Tracker.git
-cd Expense-Tracker
-npm install
-```
-
-### 2. Configure the backend
-
-```bash
-cd server
-npm install
-```
-
-Create a `.env` file inside `server/`:
-
-```env
-DATABASE_URL="postgresql://USER:PASSWORD@localhost:5432/expense_tracker"
-JWT_SECRET="your_jwt_secret"
-ANTHROPIC_API_KEY="your_claude_api_key"
-```
-
-Run the Prisma migrations to set up the database schema:
-
-```bash
-npx prisma migrate dev
-```
-
-Start the backend (from inside the `server/` directory):
-
-```bash
-node index.js
-```
-
-### 3. Run the frontend
-
-From the project root:
-
-```bash
-npm start
-```
-
-Press `w` to open the web version in your browser.
-
-## License
-
-This project is for portfolio purposes.
+- **No password recovery yet** — there's no forgot-password or email-verification flow. Next step: add email verification and a reset flow.
+- **Single currency** — amounts are stored and displayed in one currency. Next step: per-user currency settings and conversion.
