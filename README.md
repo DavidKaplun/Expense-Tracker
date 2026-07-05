@@ -8,7 +8,11 @@ A full-stack expense tracker with automated expense entry — upload a photo of 
 
 ## Demo
 
-https://github.com/user-attachments/assets/fb79ba51-89b1-411b-a8f1-0bae6fa8ebf0
+
+
+https://github.com/user-attachments/assets/e5258d65-1e5c-43b7-9efc-f4e6400b218d
+
+
 
 🔗 **Live:** https://kaplunexpensetracker.com/
 
