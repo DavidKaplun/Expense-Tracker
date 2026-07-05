@@ -1,10 +1,14 @@
+
+
+
+
 # Expense Tracker
 
 A full-stack expense tracker with automated expense entry — upload a photo of an invoice and a multimodal LLM extracts the details and fills in the expense for you.
 
 ## Demo
 
-📹 **[Demo video — link to be added]**
+https://github.com/user-attachments/assets/fb79ba51-89b1-411b-a8f1-0bae6fa8ebf0
 
 🔗 **Live:** https://kaplunexpensetracker.com/
 
