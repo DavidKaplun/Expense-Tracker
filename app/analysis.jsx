@@ -39,9 +39,9 @@ export default function AnalysisPage() {
 
   useEffect(() => {
     if (!token) return;
-    getExpenseStats(token).then(data => {
-      if (data && typeof data === 'object') setStats(data);
-    });
+    getExpenseStats(token)
+      .then(setStats)
+      .catch(() => {});
   }, [token]);
 
   return (

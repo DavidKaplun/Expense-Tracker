@@ -41,10 +41,12 @@ export default function MonthlySummaryPage() {
     setLoading(true);
     getMonthlySummary(token, currentKey)
       .then(data => {
-        if (data && typeof data === 'object') {
-          setMonthExpenses(Array.isArray(data.expenses) ? data.expenses : []);
-          setTotal(data.total ?? 0);
-        }
+        setMonthExpenses(data.expenses);
+        setTotal(data.total);
+      })
+      .catch(() => {
+        setMonthExpenses([]);
+        setTotal(0);
       })
       .finally(() => setLoading(false));
   }, [token, currentKey]);

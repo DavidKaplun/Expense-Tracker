@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import Sidebar from '../components/Sidebar';
 import { useAuth } from '../context/AuthContext';
-import { addExpense, createCategory, getCategories, extractInvoice } from '../utils/api';
+import { ApiError, addExpense, createCategory, getCategories, extractInvoice } from '../utils/api';
 
 export default function AddExpensePage() {
   const { token } = useAuth();
@@ -24,19 +24,24 @@ export default function AddExpensePage() {
   }, []);
 
   const loadCategories = async () => {
-    const data = await getCategories(token);
-    if (Array.isArray(data)) setCategories(data);
+    try {
+      setCategories(await getCategories(token));
+    } catch {
+      setCategories([]);
+    }
   };
 
   const handleAddCategory = async () => {
     if (!newCategoryName.trim()) return;
-    const data = await createCategory(token, newCategoryName.trim());
-    if (data.id) {
-      setCategories(prev => [...prev, data]);
-      setSelectedCategory(data);
+    try {
+      const created = await createCategory(token, newCategoryName.trim());
+      setCategories(prev => [...prev, created]);
+      setSelectedCategory(created);
       setNewCategoryName('');
       setShowNewCategory(false);
       setDropdownOpen(false);
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : 'Failed to add category');
     }
   };
 
@@ -49,20 +54,19 @@ export default function AddExpensePage() {
 
     const today = new Date().toISOString().slice(0, 10);
 
-    const data = await addExpense(token, {
-      amount: parseFloat(amount),
-      description,
-      date: today,
-      category_id: selectedCategory.id,
-    });
-
-    if (data.id) {
+    try {
+      await addExpense(token, {
+        amount: parseFloat(amount),
+        description,
+        date: today,
+        category_id: selectedCategory.id,
+      });
       setSuccess('Expense added!');
       setAmount('');
       setDescription('');
       setSelectedCategory(null);
-    } else {
-      setError(data.error || 'Failed to add expense');
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : 'Failed to add expense');
     }
   };
 
@@ -77,7 +81,6 @@ export default function AddExpensePage() {
       setError('');
       try {
         const data = await extractInvoice(token, file);
-        if (data.error) { setError(data.error); return; }
         if (data.description) setDescription(data.description);
         if (data.amount) setAmount(String(data.amount));
         if (data.category) {
@@ -85,8 +88,8 @@ export default function AddExpensePage() {
           if (match) setSelectedCategory(match);
         }
         if (data.scansUsed != null) setScansInfo(`${data.scansUsed}/${data.scansLimit} scans used this month`);
-      } catch {
-        setError('Failed to read invoice');
+      } catch (e) {
+        setError(e instanceof ApiError ? e.message : 'Failed to read invoice');
       } finally {
         setExtracting(false);
       }

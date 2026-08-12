@@ -15,7 +15,8 @@ export default function CategoryDetailPage() {
   useEffect(() => {
 if (!token || !name) return;
     getCategoryExpenses(token, name, { month, year })
-      .then(data => setExpenses(Array.isArray(data) ? data : []))
+      .then(setExpenses)
+      .catch(() => setExpenses([]))
       .finally(() => setLoading(false));
   }, [token, name, month, year]);
 

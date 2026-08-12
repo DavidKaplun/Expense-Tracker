@@ -24,23 +24,28 @@ export default function CategoriesPage() {
   const handleAddCategory = async () => {
     if (!newCategoryName.trim() || adding) return;
     setAdding(true);
-    const data = await createCategory(token, newCategoryName.trim());
-    if (data.id) {
+    try {
+      await createCategory(token, newCategoryName.trim());
       setNewCategoryName('');
       setShowNewCategory(false);
       setLoading(true);
       getCategories(token, FILTER_KEYS[filter])
-        .then(d => setCategories(Array.isArray(d) ? d : []))
+        .then(setCategories)
+        .catch(() => setCategories([]))
         .finally(() => setLoading(false));
+    } catch {
+      // Leave the input as-is so the user can correct and retry.
+    } finally {
+      setAdding(false);
     }
-    setAdding(false);
   };
 
   useEffect(() => {
     if (!token) return;
     setLoading(true);
     getCategories(token, FILTER_KEYS[filter])
-      .then(data => setCategories(Array.isArray(data) ? data : []))
+      .then(setCategories)
+      .catch(() => setCategories([]))
       .finally(() => setLoading(false));
   }, [token, filter]);
 

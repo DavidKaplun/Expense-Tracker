@@ -2,7 +2,7 @@ import { Link, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useAuth } from '../context/AuthContext';
-import { loginUser } from '../utils/api';
+import { ApiError, loginUser } from '../utils/api';
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
@@ -13,12 +13,12 @@ export default function LoginPage() {
 
   const handleLogin = async () => {
     setError('');
-    const data = await loginUser(username, password);
-    if (data.token) {
+    try {
+      const data = await loginUser(username, password);
       login(data.token, data.userId);
       router.replace('/add-expense');
-    } else {
-      setError(data.error || 'Login failed');
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : 'Login failed');
     }
   };
 

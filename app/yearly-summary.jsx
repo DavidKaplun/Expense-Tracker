@@ -29,10 +29,12 @@ export default function YearlySummaryPage() {
     setLoading(true);
     getYearlySummary(token, currentYear)
       .then(data => {
-        if (data && typeof data === 'object') {
-          setYearExpenses(Array.isArray(data.expenses) ? data.expenses : []);
-          setTotal(data.total ?? 0);
-        }
+        setYearExpenses(data.expenses);
+        setTotal(data.total);
+      })
+      .catch(() => {
+        setYearExpenses([]);
+        setTotal(0);
       })
       .finally(() => setLoading(false));
   }, [token, currentYear]);
