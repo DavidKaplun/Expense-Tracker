@@ -1,4 +1,4 @@
-const BASE_URL = 'http://localhost:3000';
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000';
 
 export async function registerUser(username, password) {
   const res = await fetch(`${BASE_URL}/auth/register`, {
