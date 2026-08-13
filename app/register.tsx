@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
     color: '#1a1a1a',
     backgroundColor: '#fafaf8',
     marginBottom: 16,
-    outlineStyle: 'none',
+    outlineWidth: 0,
   },
   button: {
     width: '100%',
