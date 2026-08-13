@@ -1,10 +1,10 @@
 import { Stack, usePathname, useRouter } from 'expo-router';
-import { useEffect } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { AuthProvider, useAuth } from '../context/AuthContext';
 
-const PUBLIC_ROUTES = ['/', '/register'];
+const PUBLIC_ROUTES: string[] = ['/', '/register'];
 
-function AuthGuard({ children }) {
+function AuthGuard({ children }: { children: ReactNode }) {
   const { token } = useAuth();
   const pathname = usePathname();
   const router = useRouter();

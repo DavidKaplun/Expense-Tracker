@@ -2,14 +2,15 @@ import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import Sidebar from '../components/Sidebar';
 import { useAuth } from '../context/AuthContext';
-import { addExpense, createCategory, getCategories, extractInvoice } from '../utils/api';
+import { ApiError, addExpense, createCategory, getCategories, extractInvoice } from '../utils/api';
+import type { CategorySummary } from '../types';
 
 export default function AddExpensePage() {
   const { token } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedCategory, setSelectedCategory] = useState<CategorySummary | null>(null);
   const [search, setSearch] = useState('');
-  const [categories, setCategories] = useState([]);
+  const [categories, setCategories] = useState<CategorySummary[]>([]);
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
   const [error, setError] = useState('');
@@ -17,26 +18,44 @@ export default function AddExpensePage() {
   const [newCategoryName, setNewCategoryName] = useState('');
   const [showNewCategory, setShowNewCategory] = useState(false);
   const [extracting, setExtracting] = useState(false);
-  const [scansInfo, setScansInfo] = useState(null);
+  const [scansInfo, setScansInfo] = useState<string | null>(null);
 
   useEffect(() => {
     loadCategories();
-  }, []);
+  }, [token]);
 
   const loadCategories = async () => {
-    const data = await getCategories(token);
-    if (Array.isArray(data)) setCategories(data);
+    if (!token) return;
+    try {
+      setCategories(await getCategories(token));
+    } catch {
+      setCategories([]);
+    }
   };
 
   const handleAddCategory = async () => {
-    if (!newCategoryName.trim()) return;
-    const data = await createCategory(token, newCategoryName.trim());
-    if (data.id) {
-      setCategories(prev => [...prev, data]);
-      setSelectedCategory(data);
+    if (!token || !newCategoryName.trim()) return;
+    try {
+      const created = await createCategory(token, newCategoryName.trim());
+
+      // The list holds aggregates, but POST /categories returns the plain
+      // record. A category that was just created has no expenses yet, so the
+      // aggregate fields are genuinely zero rather than unknown.
+      const summary: CategorySummary = {
+        id: created.id,
+        name: created.name,
+        expenses: 0,
+        amount: 0,
+        percent: 0,
+      };
+
+      setCategories(prev => [...prev, summary]);
+      setSelectedCategory(summary);
       setNewCategoryName('');
       setShowNewCategory(false);
       setDropdownOpen(false);
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : 'Failed to add category');
     }
   };
 
@@ -44,53 +63,65 @@ export default function AddExpensePage() {
     setError('');
     setSuccess('');
 
+    if (!token) return;
     if (!selectedCategory) return setError('Please select a category');
     if (!amount) return setError('Please enter an amount');
 
     const today = new Date().toISOString().slice(0, 10);
 
-    const data = await addExpense(token, {
-      amount: parseFloat(amount),
-      description,
-      date: today,
-      category_id: selectedCategory.id,
-    });
-
-    if (data.id) {
+    try {
+      await addExpense(token, {
+        amount: parseFloat(amount),
+        description,
+        date: today,
+        category_id: selectedCategory.id,
+      });
       setSuccess('Expense added!');
       setAmount('');
       setDescription('');
       setSelectedCategory(null);
-    } else {
-      setError(data.error || 'Failed to add expense');
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : 'Failed to add expense');
     }
   };
 
   const handleInvoiceUpload = () => {
+    if (!token) return;
+
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/jpeg,image/png,image/webp,application/pdf';
-    input.onchange = async (e) => {
-      const file = e.target.files[0];
+
+    input.onchange = async () => {
+      // Read from `input` rather than the event target, which is only typed
+      // as a generic EventTarget and would need a cast to reach .files.
+      const file = input.files?.[0];
       if (!file) return;
+
       setExtracting(true);
       setError('');
       try {
         const data = await extractInvoice(token, file);
-        if (data.error) { setError(data.error); return; }
         if (data.description) setDescription(data.description);
         if (data.amount) setAmount(String(data.amount));
-        if (data.category) {
-          const match = categories.find(c => c.name.toLowerCase() === data.category.toLowerCase());
+
+        // Held in a local so the narrowing survives into the callback below.
+        const extractedCategory = data.category;
+        if (extractedCategory) {
+          const match = categories.find(
+            c => c.name.toLowerCase() === extractedCategory.toLowerCase(),
+          );
           if (match) setSelectedCategory(match);
         }
-        if (data.scansUsed != null) setScansInfo(`${data.scansUsed}/${data.scansLimit} scans used this month`);
-      } catch {
-        setError('Failed to read invoice');
+
+        setScansInfo(`${data.scansUsed}/${data.scansLimit} scans used this month`);
+      } catch (e) {
+        setError(e instanceof ApiError ? e.message : 'Failed to read invoice');
       } finally {
         setExtracting(false);
       }
     };
+
     input.click();
   };
 
@@ -329,7 +360,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 13,
     color: '#1a1a1a',
-    outlineStyle: 'none',
+    outlineWidth: 0,
     paddingVertical: 0,
   },
   dropdownItem: {
@@ -378,7 +409,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 6,
-    outlineStyle: 'none',
+    outlineWidth: 0,
   },
   newCategoryConfirm: {
     backgroundColor: '#1a1a1a',
@@ -402,7 +433,7 @@ const styles = StyleSheet.create({
     color: '#1a1a1a',
     backgroundColor: '#fafaf8',
     marginBottom: 20,
-    outlineStyle: 'none',
+    outlineWidth: 0,
     textAlignVertical: 'top',
   },
   amountRow: {
@@ -425,7 +456,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     color: '#1a1a1a',
-    outlineStyle: 'none',
+    outlineWidth: 0,
   },
   invoiceRow: {
     flexDirection: 'row',

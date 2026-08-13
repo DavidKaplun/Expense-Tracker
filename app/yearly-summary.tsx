@@ -3,11 +3,52 @@ import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View
 import { useRouter } from 'expo-router';
 import Sidebar from '../components/Sidebar';
 import { useAuth } from '../context/AuthContext';
-import { getMonthlySummary } from '../utils/api';
+import { getYearlySummary } from '../utils/api';
+import type { ExpenseWithCategory } from '../types';
 
 const COLORS = ['#7B5EA7', '#3DA35D', '#A0522D', '#B8860B', '#2979C8', '#8B3A52', '#9E9E9E', '#6C8EBF', '#82B366', '#D6A84E'];
 
-function getColorForName(name, colorMap) {
+/** `as const` keeps the members as literals so setTab stays typed to them. */
+const TABS = ['Individual', 'Categories'] as const;
+type Tab = (typeof TABS)[number];
+
+/** One aggregated row when the Categories tab is active. */
+interface CategoryTotal {
+  name: string;
+  amount: number;
+  expenses: number;
+}
+
+/**
+ * A row in the list.
+ *
+ * The two tabs render structurally different rows -- one expense versus one
+ * category total -- so this is a discriminated union rather than a single
+ * shape with optional fields. The `kind` tag is what lets the JSX narrow to
+ * the fields that actually exist, instead of relying on `tab` matching the
+ * data that was built.
+ */
+type SummaryRow =
+  | {
+      kind: 'individual';
+      id: number;
+      name: string;
+      category: string;
+      color: string;
+      amount: number;
+      percent: number;
+    }
+  | {
+      kind: 'category';
+      name: string;
+      expenses: number;
+      color: string;
+      amount: number;
+      percent: number;
+    };
+
+/** Assigns each distinct name a stable colour, in first-seen order. */
+function getColorForName(name: string, colorMap: Record<string, string>): string {
   if (!colorMap[name]) {
     const keys = Object.keys(colorMap);
     colorMap[name] = COLORS[keys.length % COLORS.length];
@@ -15,50 +56,37 @@ function getColorForName(name, colorMap) {
   return colorMap[name];
 }
 
-function formatMonthKey(date) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  return `${y}-${m}`;
-}
-
-function formatMonthTitle(key) {
-  const [y, m] = key.split('-');
-  const date = new Date(parseInt(y), parseInt(m) - 1, 1);
-  return date.toLocaleString('default', { month: 'long', year: 'numeric' });
-}
-
-export default function MonthlySummaryPage() {
+export default function YearlySummaryPage() {
   const router = useRouter();
   const { token } = useAuth();
-  const [tab, setTab] = useState('Individual');
-  const [monthExpenses, setMonthExpenses] = useState([]);
+  const [tab, setTab] = useState<Tab>('Individual');
+  const [yearExpenses, setYearExpenses] = useState<ExpenseWithCategory[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [currentKey, setCurrentKey] = useState(formatMonthKey(new Date()));
+  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
 
   useEffect(() => {
     if (!token) return;
     setLoading(true);
-    getMonthlySummary(token, currentKey)
+    getYearlySummary(token, currentYear)
       .then(data => {
-        if (data && typeof data === 'object') {
-          setMonthExpenses(Array.isArray(data.expenses) ? data.expenses : []);
-          setTotal(data.total ?? 0);
-        }
+        setYearExpenses(data.expenses);
+        setTotal(data.total);
+      })
+      .catch(() => {
+        setYearExpenses([]);
+        setTotal(0);
       })
       .finally(() => setLoading(false));
-  }, [token, currentKey]);
+  }, [token, currentYear]);
 
-  const [y, m] = currentKey.split('-').map(Number);
-  const prevKey = formatMonthKey(new Date(y, m - 2, 1));
-  const nextKey = formatMonthKey(new Date(y, m, 1));
-  const now = formatMonthKey(new Date());
-  const canGoNext = currentKey < now;
+  const canGoNext = currentYear < new Date().getFullYear();
 
-  const colorMap = {};
-  const individualData = [...monthExpenses]
+  const colorMap: Record<string, string> = {};
+  const individualData: SummaryRow[] = [...yearExpenses]
     .sort((a, b) => b.amount - a.amount)
     .map(e => ({
+      kind: 'individual',
       id: e.id,
       name: e.description || 'Expense',
       category: e.category?.name ?? 'Uncategorized',
@@ -67,24 +95,24 @@ export default function MonthlySummaryPage() {
       percent: total > 0 ? (e.amount / total) * 100 : 0,
     }));
 
-  const colorMap2 = {};
-  const categoryMap = {};
-  for (const e of monthExpenses) {
+  const colorMap2: Record<string, string> = {};
+  const categoryMap: Record<string, CategoryTotal> = {};
+  for (const e of yearExpenses) {
     const catName = e.category?.name ?? 'Uncategorized';
     if (!categoryMap[catName]) categoryMap[catName] = { name: catName, amount: 0, expenses: 0 };
     categoryMap[catName].amount += e.amount;
     categoryMap[catName].expenses += 1;
   }
-  const categoriesData = Object.values(categoryMap)
+  const categoriesData: SummaryRow[] = Object.values(categoryMap)
     .sort((a, b) => b.amount - a.amount)
     .map(cat => ({
+      kind: 'category',
       ...cat,
       color: getColorForName(cat.name, colorMap2),
       percent: total > 0 ? (cat.amount / total) * 100 : 0,
     }));
 
-  const data = tab === 'Individual' ? individualData : categoriesData;
-
+  const data: SummaryRow[] = tab === 'Individual' ? individualData : categoriesData;
 
   return (
     <View style={styles.container}>
@@ -96,7 +124,7 @@ export default function MonthlySummaryPage() {
             <Text style={styles.backArrow}>‹</Text>
             <Text style={styles.backText}>back</Text>
           </TouchableOpacity>
-          <Text style={styles.topBarTitle}>monthly summary</Text>
+          <Text style={styles.topBarTitle}>yearly summary</Text>
         </View>
 
         {loading ? (
@@ -105,20 +133,17 @@ export default function MonthlySummaryPage() {
           <ScrollView contentContainerStyle={styles.scrollContent}>
             <View style={styles.card}>
 
-              {/* Month navigation + total */}
-              <View style={styles.monthRow}>
-                <View style={styles.monthNav}>
-                  <TouchableOpacity
-                    onPress={() => setCurrentKey(prevKey)}
-                    style={styles.navBtn}
-                  >
+              {/* Year navigation + total */}
+              <View style={styles.headerRow}>
+                <View style={styles.yearNav}>
+                  <TouchableOpacity style={styles.navBtn} onPress={() => setCurrentYear(y => y - 1)}>
                     <Text style={styles.navArrow}>‹</Text>
                   </TouchableOpacity>
-                  <Text style={styles.monthTitle}>{formatMonthTitle(currentKey)}</Text>
+                  <Text style={styles.yearTitle}>{currentYear}</Text>
                   <TouchableOpacity
-                    onPress={() => canGoNext && setCurrentKey(nextKey)}
                     style={[styles.navBtn, !canGoNext && styles.navBtnDisabled]}
                     disabled={!canGoNext}
+                    onPress={() => setCurrentYear(y => y + 1)}
                   >
                     <Text style={styles.navArrow}>›</Text>
                   </TouchableOpacity>
@@ -132,7 +157,7 @@ export default function MonthlySummaryPage() {
               {/* Toggle */}
               <View style={styles.toggleRow}>
                 <View style={styles.toggleTrack}>
-                  {['Individual', 'Categories'].map(t => (
+                  {TABS.map(t => (
                     <TouchableOpacity
                       key={t}
                       style={[styles.toggleBtn, tab === t && styles.toggleBtnActive]}
@@ -149,22 +174,22 @@ export default function MonthlySummaryPage() {
 
               {/* List */}
               {data.length === 0 ? (
-                <Text style={styles.emptyText}>No expenses for this month.</Text>
+                <Text style={styles.emptyText}>No expenses for {currentYear}.</Text>
               ) : (
                 <View style={styles.list}>
                   {data.map((item, index) => (
                     <TouchableOpacity
-                      key={item.id ?? item.name}
+                      key={item.kind === 'individual' ? item.id : item.name}
                       style={[styles.row, index < data.length - 1 && styles.rowBorder]}
                       activeOpacity={tab === 'Categories' ? 0.7 : 1}
-                      onPress={() => tab === 'Categories' && router.push(`/category-detail?name=${item.name}&month=${currentKey}`)}
+                      onPress={() => tab === 'Categories' && router.push(`/category-detail?name=${item.name}&year=${currentYear}`)}
                     >
                       <View style={[styles.colorBar, { backgroundColor: item.color }]} />
 
                       <View style={styles.nameCol}>
                         <Text style={styles.itemName}>{item.name}</Text>
                         <Text style={styles.itemSub}>
-                          {tab === 'Individual'
+                          {item.kind === 'individual'
                             ? item.category
                             : `${item.expenses} expense${item.expenses !== 1 ? 's' : ''}`}
                         </Text>
@@ -245,7 +270,7 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 2 },
   },
-  monthRow: {
+  headerRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',
     justifyContent: 'space-between',
@@ -253,7 +278,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 8,
   },
-  monthNav: {
+  yearNav: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
@@ -269,8 +294,8 @@ const styles = StyleSheet.create({
     color: '#1a1a1a',
     lineHeight: 30,
   },
-  monthTitle: {
-    fontSize: 26,
+  yearTitle: {
+    fontSize: 36,
     fontWeight: '600',
     color: '#1a1a1a',
   },
@@ -285,7 +310,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   totalAmount: {
-    fontSize: 28,
+    fontSize: 30,
     fontWeight: '700',
     color: '#1a1a1a',
   },

@@ -1,7 +1,7 @@
 import { Link, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { registerUser } from '../utils/api';
+import { ApiError, registerUser } from '../utils/api';
 
 export default function RegisterPage() {
   const [username, setUsername] = useState('');
@@ -16,11 +16,11 @@ export default function RegisterPage() {
       setError('Passwords do not match');
       return;
     }
-    const data = await registerUser(username, password);
-    if (data.userId) {
+    try {
+      await registerUser(username, password);
       router.replace('/');
-    } else {
-      setError(data.error || 'Registration failed');
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : 'Registration failed');
     }
   };
 
@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
     color: '#1a1a1a',
     backgroundColor: '#fafaf8',
     marginBottom: 16,
-    outlineStyle: 'none',
+    outlineWidth: 0,
   },
   button: {
     width: '100%',

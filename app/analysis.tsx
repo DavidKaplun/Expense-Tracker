@@ -4,6 +4,7 @@ import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-nati
 import Sidebar from '../components/Sidebar';
 import { useAuth } from '../context/AuthContext';
 import { getExpenseStats } from '../utils/api';
+import type { ExpenseStats } from '../types';
 
 const summaryItems = [
   {
@@ -35,13 +36,18 @@ const summaryItems = [
 export default function AnalysisPage() {
   const router = useRouter();
   const { token } = useAuth();
-  const [stats, setStats] = useState({ avgMonthly: 0, avgYearly: 0, monthCount: 0, yearCount: 0 });
+  const [stats, setStats] = useState<ExpenseStats>({
+    avgMonthly: 0,
+    avgYearly: 0,
+    monthCount: 0,
+    yearCount: 0,
+  });
 
   useEffect(() => {
     if (!token) return;
-    getExpenseStats(token).then(data => {
-      if (data && typeof data === 'object') setStats(data);
-    });
+    getExpenseStats(token)
+      .then(setStats)
+      .catch(() => {});
   }, [token]);
 
   return (

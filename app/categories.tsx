@@ -5,42 +5,61 @@ import Sidebar from '../components/Sidebar';
 import { useAuth } from '../context/AuthContext';
 import { TextInput } from 'react-native';
 import { getCategories, createCategory } from '../utils/api';
+import type { CategoryFilter, CategorySummary } from '../types';
 
-const FILTERS = ['This month', 'This year', 'All time'];
-const FILTER_KEYS = { 'This month': 'month', 'This year': 'year', 'All time': 'all' };
+/** `as const` keeps the members as literals so setFilter stays typed to them. */
+const FILTERS = ['This month', 'This year', 'All time'] as const;
+type Filter = (typeof FILTERS)[number];
+
+/**
+ * Maps the user-facing label to the value the endpoint expects. Typing it
+ * Record<Filter, CategoryFilter> means adding a filter to FILTERS without
+ * giving it an API key is a compile error rather than an undefined query.
+ */
+const FILTER_KEYS: Record<Filter, CategoryFilter> = {
+  'This month': 'month',
+  'This year': 'year',
+  'All time': 'all',
+};
+
 const COLORS = ['#6C8EBF', '#82B366', '#D6A84E', '#AE6BBD', '#E07070', '#5BBFBF', '#E0934E', '#9E9E9E'];
 
 export default function CategoriesPage() {
   const router = useRouter();
   const { token } = useAuth();
-  const [filter, setFilter] = useState('This month');
+  const [filter, setFilter] = useState<Filter>('This month');
   const [filterOpen, setFilterOpen] = useState(false);
-  const [categories, setCategories] = useState([]);
+  const [categories, setCategories] = useState<CategorySummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [showNewCategory, setShowNewCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [adding, setAdding] = useState(false);
 
   const handleAddCategory = async () => {
-    if (!newCategoryName.trim() || adding) return;
+    if (!token || !newCategoryName.trim() || adding) return;
     setAdding(true);
-    const data = await createCategory(token, newCategoryName.trim());
-    if (data.id) {
+    try {
+      await createCategory(token, newCategoryName.trim());
       setNewCategoryName('');
       setShowNewCategory(false);
       setLoading(true);
       getCategories(token, FILTER_KEYS[filter])
-        .then(d => setCategories(Array.isArray(d) ? d : []))
+        .then(setCategories)
+        .catch(() => setCategories([]))
         .finally(() => setLoading(false));
+    } catch {
+      // Leave the input as-is so the user can correct and retry.
+    } finally {
+      setAdding(false);
     }
-    setAdding(false);
   };
 
   useEffect(() => {
     if (!token) return;
     setLoading(true);
     getCategories(token, FILTER_KEYS[filter])
-      .then(data => setCategories(Array.isArray(data) ? data : []))
+      .then(setCategories)
+      .catch(() => setCategories([]))
       .finally(() => setLoading(false));
   }, [token, filter]);
 
@@ -410,7 +429,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    outlineStyle: 'none',
+    outlineWidth: 0,
   },
   newCategoryConfirm: {
     backgroundColor: '#1a1a1a',
