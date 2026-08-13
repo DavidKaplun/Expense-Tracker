@@ -13,11 +13,13 @@ export default function Sidebar() {
     router.replace('/');
   };
 
+  // `as const` keeps each href a string literal, which is what expo-router's
+  // Href type accepts; without it they widen to string and router.push rejects.
   const navItems = [
     { label: 'Add expense', icon: '+', href: '/add-expense' },
     { label: 'Analysis', icon: '▦', href: '/analysis' },
     { label: 'Categories', icon: '⊙', href: '/categories' },
-  ];
+  ] as const;
 
   return (
     <View style={styles.sidebar}>
