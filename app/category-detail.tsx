@@ -4,16 +4,31 @@ import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View
 import Sidebar from '../components/Sidebar';
 import { useAuth } from '../context/AuthContext';
 import { getCategoryExpenses } from '../utils/api';
+import type { Expense } from '../types';
+
+/**
+ * Reads a single route parameter.
+ *
+ * expo-router types every param as string | string[] | undefined, because a
+ * query string can legally repeat a key (?year=2024&year=2025). These screens
+ * only ever expect one value, so the first is taken.
+ */
+function firstParam(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
 
 export default function CategoryDetailPage() {
   const router = useRouter();
-  const { name, month, year } = useLocalSearchParams();
+  const params = useLocalSearchParams();
+  const name = firstParam(params.name);
+  const month = firstParam(params.month);
+  const year = firstParam(params.year);
   const { token } = useAuth();
-  const [expenses, setExpenses] = useState([]);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-if (!token || !name) return;
+    if (!token || !name) return;
     getCategoryExpenses(token, name, { month, year })
       .then(setExpenses)
       .catch(() => setExpenses([]))
