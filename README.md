@@ -18,7 +18,7 @@ https://github.com/user-attachments/assets/e5258d65-1e5c-43b7-9efc-f4e6400b218d
 
 ## Stack
 
-- **Frontend:** React, React Native Web (Expo), file-based routing
+- **Frontend:** React, TypeScript, React Native Web (Expo), file-based routing
 - **Backend:** Node.js, Express, REST API
 - **Database:** PostgreSQL with Prisma ORM
 - **Auth:** JWT, bcrypt
